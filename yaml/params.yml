@@ -1,0 +1,59 @@
+env:
+  render: True
+  workspace:
+    pos: [-0.614, 0, 0]
+    quat:
+      w: 0.7071232
+      x: 0.0
+      y: 0.0
+      z: 0.707904
+    size: [0.5, 0.5]
+  camera:
+    pos: [0.0, 0.0, 0.6]
+    target_pos: [.0, 0.0, 0.0]
+    up_vector: [0.0, 1.0, 0.0]
+    intrinsics:
+      fx: 463
+      fy: 463
+      cx: 320
+      cy: 240
+      width: 640
+      height: 480
+  scene_generation:
+    all_equal_height_prob: 0.0
+    target:
+      min_bounding_box: [ .01, .01, .005 ]
+      max_bounding_box: [ .03, .03, .010 ]
+      probability_box: 1.0
+      enforce_convex_hull: 15
+      randomize_pos: False
+    obstacle:
+      min_bounding_box: [ .01, .01, .005 ]
+      max_bounding_box: [ .03, .03, .020 ]
+    nr_of_obstacles:
+      - 5
+      - 8
+    hug:
+      probability: 0.5  # Probability of hugging
+      radius: 10  # radius within the object lies, in meters
+
+mdp:
+  singulation_distance: 0.03
+  nr_discrete_actions: 8
+  nr_primitives: 2
+  push_distance: 0.1
+
+agent:
+  replay_buffer_size: 1000000
+  init_replay_buffer_size: 1000
+  batch_size: 32
+  discount: 0.9
+  tau: 0.999
+  double_dqn: False
+  epsilon_start: 0.9
+  epsilon_end: 0.05
+  epsilon_decay: 20000  # number of learning steps for half epsilon, set to 0 if no decay is needed
+  learning_rate: 0.001
+  hidden_units: [ 135, 135 ]
+  device: 'cuda'  # "cuda", "cpu"
+
