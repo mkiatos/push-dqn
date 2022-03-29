@@ -32,9 +32,11 @@ pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f ht
 
 ## Training
 ```commandline
+python run.py --n_episodes 10000 --episode_max_steps 10 --save_every 100 --seed 0
 ```
 
 ## Evaluation
 To test your own trained model, simply change the location of --snapshot_file:
 ```commandline
+python run.py --is_testing --test_trials 100 --episode_max_steps 10 --seed 1
 ```
