@@ -22,14 +22,14 @@ env:
   scene_generation:
     all_equal_height_prob: 0.0
     target:
-      min_bounding_box: [ .01, .01, .005 ]
-      max_bounding_box: [ .03, .03, .010 ]
+      min_bounding_box: [ .03, .03, .01 ]
+      max_bounding_box: [ .04, .04, .015 ]
       probability_box: 1.0
       enforce_convex_hull: 15
       randomize_pos: False
     obstacle:
-      min_bounding_box: [ .01, .01, .005 ]
-      max_bounding_box: [ .03, .03, .020 ]
+      min_bounding_box: [ .03, .03, .02 ]
+      max_bounding_box: [ .04, .04, .025 ]
     nr_of_obstacles:
       - 5
       - 8
