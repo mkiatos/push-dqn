@@ -1,5 +1,5 @@
-from clutter.core import Agent
-from clutter.util.memory import ReplayBuffer
+from clt_core.util.memory import ReplayBuffer
+from clt_core.core import Agent
 
 import torch
 import torch.nn as nn
@@ -25,6 +25,8 @@ class QNetwork(nn.Module):
         """
         super(QNetwork, self).__init__()
 
+        torch.manual_seed(0)
+
         self.hidden_layers = nn.ModuleList()
         self.hidden_layers.append(nn.Linear(state_dim, hidden_units[0]))
         for i in range(1, len(hidden_units)):
@@ -44,7 +46,8 @@ class QNetwork(nn.Module):
 
 class DQN(Agent):
     def __init__(self, state_dim, action_dim, params):
-        super(DQN, self).__init__('dqn', params)
+        super(DQN, self).__init__(name='dqn', params=params)
+        
         self.state_dim = state_dim
         self.action_dim = action_dim
 
