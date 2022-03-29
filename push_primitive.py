@@ -5,10 +5,8 @@ import numpy as np
 import copy
 import math
 
-
-from util.utils import min_max_scale
-from util.orientation import Quaternion, Affine3
-from util.math import LineSegment2D, ConvexHull, transform_points
+from clt_core.util.orientation import Quaternion, Affine3
+from clt_core.util.math import LineSegment2D, ConvexHull, transform_points, min_max_scale
 
 
 class Push:
