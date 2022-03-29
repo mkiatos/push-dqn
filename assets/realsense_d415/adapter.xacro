@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="d415_adapter">
+  <!-- Create the link of the hemisphere -->
+  <link name="adapter_base">
+    <visual>
+      <geometry>
+        <mesh filename="./realsense_d415/meshes/adapter.dae"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="adapter_base_to_mount" type="fixed">
+    <parent link="adapter_mount" />
+    <child link = "adapter_base" />
+    <origin xyz="-0.031 -0.08 0.0" rpy="0 0 0" />
+  </joint>
+  <link name="adapter_mount"/>
+
+  <joint name="adapter_base_to_mount2" type="fixed">
+    <parent link="adapter_mount" />
+    <child link = "adapter_mount2" />
+    <origin xyz="0.0 0.0 0.005" rpy="0 0 0" />
+  </joint>
+  <link name="adapter_mount2"/>
+
+  <joint name="adapter_base_to_mount3" type="fixed">
+    <parent link="adapter_mount2" />
+    <child link = "adapter_mount3" />
+    <origin xyz="0.024 -0.07 0.0" rpy="0 0 0" />
+  </joint>
+  <link name="adapter_mount3"/>
+
+</robot>

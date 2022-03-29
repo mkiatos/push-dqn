@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="finger_long">
+  <xacro:property name="M_PI" value="3.1415926535897931" />
+  <!-- Create the link of the finger -->
+  <link name="finger_base">
+    <visual>
+      <geometry>
+        <mesh filename="./finger/finger_long.dae"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="finger_base_to_mount" type="fixed">
+    <parent link="finger_mount" />
+    <child link = "finger_base" />
+    <origin xyz="0.031 -0.031 0.098" rpy="0 ${M_PI} 0" />
+  </joint>
+  <link name="finger_mount"/>
+
+  <joint name="finger_base_to_tool" type="fixed">
+    <parent link="finger_mount" />
+    <child link = "finger_tip" />
+    <origin xyz="0.0 0.0 0.098" rpy="0 0 0" />
+  </joint>
+  <link name="finger_tip"/>
+
+</robot>
+

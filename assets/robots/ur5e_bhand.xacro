@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="ur5e_bhand">
+  <xacro:include filename="$(arg assets_dir)/robots/ur5e.xacro"/>
+
+  <xacro:include filename="$(arg assets_dir)/bhand/bh282.urdf.xacro"/>
+
+  <joint name="ur5_bhand" type="fixed">
+    <parent link="ur5_tool0" />
+    <child link = "hand_base_link" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+
+  <link name="hand_base_link"/>
+
+  <xacro:bhand_macro name="bh" parent="hand_base_link">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </xacro:bhand_macro>
+</robot>

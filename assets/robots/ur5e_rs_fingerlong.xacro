@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="ur5e_rs_finger">
+  <xacro:include filename="$(arg assets_dir)/robots/ur5e.xacro"/>
+
+  <xacro:arg name="use_nominal_extrinsics" default="true" />
+  <xacro:include filename="$(arg assets_dir)/realsense_d415/_d415.urdf.xacro" />
+
+  <xacro:include filename="$(arg assets_dir)/realsense_d415/adapter.xacro"/>
+  <xacro:include filename="$(arg assets_dir)/finger/finger_long.xacro"/>
+  <xacro:property name="M_PI" value="3.1415926535897931" />
+
+  <joint name="adapter_to_ur5" type="fixed">
+    <parent link="ur5_tool0" />
+    <child link = "adapter_mount" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+
+  <joint name="adapter_to_camera" type="fixed">
+    <parent link="adapter_mount3" />
+    <child link = "adapter_to_camera" />
+    <origin xyz="-0.023 0.012 0.01" rpy="0 -${M_PI/2} ${M_PI/2}" />
+  </joint>
+  <link name="adapter_to_camera"/>
+
+  <joint name="adapter_to_finger" type="fixed">
+    <parent link="adapter_mount2" />
+    <child link = "finger_mount" />
+    <origin xyz="0 0 0.0" rpy="0 0 0 " />
+  </joint>
+
+  <xacro:sensor_d415 parent="adapter_to_camera" use_nominal_extrinsics="$(arg use_nominal_extrinsics)">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:sensor_d415>
+
+</robot>
