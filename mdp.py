@@ -1,9 +1,40 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pybullet as p
+import cv2
 
 from push_primitive import PushAndAvoidTarget, PushObstacle
-from util.cv_tools import PinholeCameraIntrinsics, PointCloud, Feature
-from util.pybullet import get_camera_pose
+from clt_core.util.cv_tools import PinholeCameraIntrinsics, PointCloud, Feature
+from clt_core.util.pybullet import get_camera_pose
+from clt_core.core import MDP
+
+CROP_TABLE = 193
+
+def get_heightmap(obs):
+    """
+    Computes the heightmap based on the 'depth' and 'seg'. In this heightmap table pixels has value zero,
+    objects > 0 and everything below the table <0.
+
+    Parameters
+    ----------
+    obs : dict
+        The dictionary with the visual and full state of the environment.
+
+    Returns
+    -------
+    np.ndarray :
+        Array with the heightmap.
+    """
+    rgb, depth, seg = obs['rgb'], obs['depth'], obs['seg']
+    objects = obs['full_state']['objects']
+
+    # Compute heightmap
+    table_id = next(x.body_id for x in objects if x.name == 'table')
+    depthcopy = depth.copy()
+    table_depth = np.max(depth[seg == table_id])
+    depthcopy[seg == table_id] = table_depth
+    heightmap = table_depth - depthcopy
+    return heightmap
 
 
 def empty_push(obs, next_obs, eps=0.005):
@@ -53,8 +84,9 @@ def get_distances_from_target(obs):
     return np.array(distances_from_target)
 
 
-class MDP:
+class DiscreteMDP(MDP):
     def __init__(self, params):
+        super(DiscreteMDP, self).__init__(name='discre_mdp', params=params)
         # TODO: hard-coded values
         self.pinhole_camera_intrinsics = PinholeCameraIntrinsics.from_params(params['env']['camera']['intrinsics'])
         camera_pos, camera_quat = get_camera_pose(np.array(params['env']['camera']['pos']),
@@ -65,7 +97,8 @@ class MDP:
         self.camera_pose[0:3, 3] = camera_pos
 
         # params from yaml
-        self.m_per_pixel = 265
+        self.m_per_pixel = 400
+        self.singulation_distance = 0.03
 
         self.surface_size = params['env']['workspace']['size']
 
@@ -106,7 +139,7 @@ class MDP:
         return np.asarray(above_pts.points)
 
     @staticmethod
-    def get_heightmap(point_cloud, shape=(100, 100), grid_step=0.01):
+    def get_heightmap(point_cloud, shape=(100, 100), grid_step=0.005):
         """
         Computes the heightmap of the scene given the aligned point cloud.
         """
@@ -129,12 +162,17 @@ class MDP:
 
         return height_grid
 
-    def extract_features(self, heightmap, target_size, plot=False):
+    def extract_features(self, heightmap, mask, plot=False):
         h, w = heightmap.shape
         cx = int(w / 2)
         cy = int(h / 2)
 
-        bbox = ((target_size / 2.0) * self.m_per_pixel).astype(int)
+        target_ids = np.argwhere(mask > 0)
+        x_min = np.min(target_ids[:, 1])
+        x_max = np.max(target_ids[:, 1])
+        y_min = np.min(target_ids[:, 0])
+        y_max = np.max(target_ids[:, 0])
+        bbox = np.array([int((x_max - x_min)/2.0), int((y_max - y_min)/2.0)])
         cx1 = cx - int(bbox[0]+0.5)
         cy1 = cy - int(bbox[1]+0.5)
 
@@ -150,15 +188,20 @@ class MDP:
             features.append(np.mean(cropped))
 
         # Define the up left corners for each 32x32 region around the target [f_up, f_right, f_down, f_left]
-        up_left_corners = [(int(cx - 16), int(cy - bbox[1] - 32)), (int(cx + bbox[0]), int(cy - 16)),
-                           (int(cx - 16), int(cy + bbox[1])), (int(cx - bbox[0] - 32), int(cy - 16))]
+        feature_area = 16
+        kernel = [4, 4]
+        stride = 4
+        up_left_corners = [(int(cx - feature_area), int(cy - bbox[1] - 2 * feature_area)),
+                           (int(cx + bbox[0]), int(cy - feature_area)),
+                           (int(cx - feature_area), int(cy + bbox[1])),
+                           (int(cx - bbox[0] - 2 * feature_area), int(cy - feature_area))]
 
         # Compute f_up, f_right, f_down, f_left
         for up_left_corner in up_left_corners:
-            center = [up_left_corner[0] + 16, up_left_corner[1] + 16]
-            cropped = heightmap[center[1] - 16:center[1] + 16,
-                                center[0] - 16:center[0] + 16]
-            features += Feature(cropped).pooling(kernel=[4, 4], stride=4).flatten().tolist()
+            center = [up_left_corner[0] + feature_area, up_left_corner[1] + feature_area]
+            cropped = heightmap[center[1] - feature_area:center[1] + feature_area,
+                                center[0] - feature_area:center[0] + feature_area]
+            features += Feature(cropped).pooling(kernel, stride).flatten().tolist()
 
         if plot:
             import matplotlib.patches as patches
@@ -170,7 +213,7 @@ class MDP:
             # plt.plot(cx, cy, 'ro')
             ax.add_patch(rect)
             for pt in up_left_corners:
-                rect = patches.Rectangle(pt, 32, 32,
+                rect = patches.Rectangle(pt, feature_area * 2, feature_area * 2,
                                          linewidth=1, edgecolor='r', facecolor='none')
                 ax.add_patch(rect)
             plt.show()
@@ -182,13 +225,43 @@ class MDP:
         target = next(x for x in obs['full_state']['objects'] if x.name == 'target')
 
         # Get scene point cloud
-        points = self.get_scene_points(obs)
+        # points = self.get_scene_points(obs)
 
-        # Generate heightmap
-        heightmap = self.get_heightmap(points)
+        rgb, depth, seg = obs['rgb'], obs['depth'], obs['seg']
+        target_id = next(x.body_id for x in obs['full_state']['objects'] if x.name == 'target')
+
+        heightmap = get_heightmap(obs)
+        heightmap[heightmap < 0] = 0  # Set negatives (everything below table) the same as the table in order to
+        # properly translate it
+        # print(len(np.argwhere(seg == target_id)))
+        if len(np.argwhere(seg == target_id)) == 0:
+            return np.zeros(262,)
+        target_centroid = np.mean(np.argwhere(seg == target_id), axis=0)
+
+        # Get target pose from full state
+        target_obj = next(x for x in obs['full_state']['objects'] if x.name == 'target')
+        target_pose = np.eye(4)
+        target_pose[0:3, 0:3] = target_obj.quat.rotation_matrix()
+        target_pose[0:3, 3] = target_obj.pos
+        angle = np.arccos(np.dot(np.array([1, 0, 0]), target_pose[0:3, 0].transpose()))
+
+        heightmap = Feature(heightmap).translate(tx=target_centroid[1], ty=target_centroid[0]).\
+                                       rotate(-angle * 180 / np.pi).\
+                                       crop(CROP_TABLE, CROP_TABLE).array()
+        heightmap = cv2.resize(heightmap, (100, 100), interpolation=cv2.INTER_NEAREST)
+
+        mask = np.zeros((rgb.shape[0], rgb.shape[1]), dtype=np.uint8)
+        mask[seg == target_id] = 255
+        mask = Feature(mask).translate(tx=target_centroid[1], ty=target_centroid[0]).\
+                                       rotate(-angle * 180 / np.pi).\
+                                       crop(CROP_TABLE, CROP_TABLE).array()
+        mask = cv2.resize(mask, (100, 100), interpolation=cv2.INTER_NEAREST)
+
+        # # Generate heightmap
+        # heightmap = self.get_heightmap(points)
 
         # Extract features
-        features = self.extract_features(heightmap=heightmap, target_size=np.array([target.size[0], target.size[1]]))
+        features = self.extract_features(heightmap=heightmap, mask=mask)
         target_pos = np.array([target.pos[0] / (self.surface_size[0] / 2.0),
                                target.pos[1] / (self.surface_size[1] / 2.0)])
         features = np.concatenate((features, target_pos))
@@ -215,12 +288,21 @@ class MDP:
 
         return points_around
 
+    def fallen(self, obs, next_obs):
+        target = next(x for x in next_obs['full_state']['objects'] if x.name == 'target')
+        if target.pos[2] < 0:
+            return True
+        return False
+
     def reward(self, obs, next_obs, action):
-        if next_obs['collision'] or empty_push(obs, next_obs):
+
+        # collision or empty push or fallen
+        if next_obs['collision'] or empty_push(obs, next_obs) or self.fallen(obs, next_obs):
             return -10.0
 
-        # Singulation
-        if len(self.point_around_target(next_obs)) == 0:
+        # singulation
+        # if len(self.point_around_target(next_obs)) == 0:
+        if all(dist > self.singulation_distance for dist in get_distances_from_target(next_obs)):
             return 10.0
 
         # Push near the bin walls
@@ -258,7 +340,9 @@ class MDP:
         target = next(x for x in next_obs['full_state']['objects'] if x.name == 'target')
         if target.pos[2] < 0:
             return 3
-        elif len(self.point_around_target(next_obs)) == 0:
+        # elif len(self.point_around_target(next_obs)) == 0:
+        #     return 2
+        if all(dist > self.singulation_distance for dist in get_distances_from_target(next_obs)):
             return 2
         else:
             return 0
@@ -284,8 +368,16 @@ class MDP:
 
         return push.p1.copy(), push.p2.copy()
 
+
     def init_state_is_valid(self, obs):
-        distances_from_target = get_distances_from_target(obs)
-        if all(dist > self.singulation_distance for dist in distances_from_target):
+        rgb, depth, seg = obs['rgb'], obs['depth'], obs['seg']
+        target = next(x for x in obs['full_state']['objects'] if x.name == 'target')
+
+        mask = np.zeros((rgb.shape[0], rgb.shape[1]), dtype=np.uint8)
+        mask[seg == target.body_id] = 255
+        mask = Feature(mask).crop(CROP_TABLE, CROP_TABLE).array()
+
+        if (mask == 0).all() or target.pos[2] < 0:
             return False
+
         return True
