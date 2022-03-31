@@ -7,8 +7,10 @@ from push_primitive import PushAndAvoidTarget, PushObstacle
 from clt_core.util.cv_tools import PinholeCameraIntrinsics, PointCloud, Feature
 from clt_core.util.pybullet import get_camera_pose
 from clt_core.core import MDP
+from clt_core.util.math import min_max_scale
 
 CROP_TABLE = 193
+
 
 def get_heightmap(obs):
     """
@@ -217,6 +219,13 @@ class DiscreteMDP(MDP):
                                          linewidth=1, edgecolor='r', facecolor='none')
                 ax.add_patch(rect)
             plt.show()
+
+        # Normalize features to 0-1
+        # print(np.min(np.asarray(features)), np.max(np.asarray(features)))
+        features = min_max_scale(np.asarray(features),
+                                 range=[0, np.max(np.asarray(features))],
+                                 target_range=[0, 1])
+        # print(np.min(features), np.max(features))
 
         return np.asarray(features)
 
