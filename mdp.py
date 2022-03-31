@@ -242,8 +242,8 @@ class DiscreteMDP(MDP):
         heightmap = get_heightmap(obs)
         heightmap[heightmap < 0] = 0  # Set negatives (everything below table) the same as the table in order to
         # properly translate it
-        # print(len(np.argwhere(seg == target_id)))
-        if len(np.argwhere(seg == target_id)) == 0:
+        cropped_seg = Feature(seg).crop(CROP_TABLE, CROP_TABLE).array()
+        if len(np.argwhere(cropped_seg == target_id)) == 0:
             return np.zeros(262,)
         target_centroid = np.mean(np.argwhere(seg == target_id), axis=0)
 
