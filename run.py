@@ -106,6 +106,9 @@ def train(args):
     with open('yaml/params.yml', 'r') as stream:
         params = yaml.safe_load(stream)
 
+    logger = Logger('logs/train_dqn')
+    params['agent']['log_dir'] = logger.log_dir
+
     env = BulletEnv(params=params['env'])
     mdp = DiscreteMDP(params)
     agent = DQN(state_dim=262, action_dim=8, params=params['agent'])
@@ -114,16 +117,18 @@ def train(args):
     rng = np.random.RandomState()
     rng.seed(args.seed)
 
-    logger = Logger('logs/train_dqn')
-
     train_data = []
 
     for i in range(args.n_episodes):
         print('--- (Train) Episode {} ---'.format(i))
         episode_seed = rng.randint(0, pow(2, 32) - 1)
+        episode_seed = 1569793795
         print('Session Seed: ', args.seed, 'Episode seed:', episode_seed)
         episode_data, obs, actions = run_episode(env, agent, mdp, args.episode_max_steps, seed=episode_seed)
         train_data.append(episode_data)
+
+        logger.update()
+        logger.log_data(train_data, 'train_data')
 
         if i % args.save_every == 0:
             agent.save(logger.log_dir, name='model_' + str(i))
