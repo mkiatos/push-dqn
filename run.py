@@ -136,7 +136,45 @@ def train(args):
 
 
 def eval(args):
-    pass
+    with open('yaml/params.yml', 'r') as stream:
+        params = yaml.safe_load(stream)
+
+    logger = Logger('logs/eval_dqn')
+    params['agent']['log_dir'] = logger.log_dir
+
+    env = BulletEnv(params=params['env'])
+    mdp = DiscreteMDP(params)
+    agent = DQN.load(args.checkpoint)
+    agent.seed(args.seed)
+
+    rng = np.random.RandomState()
+    rng.seed(args.seed)
+
+    eval_data = []
+    for i in range(args.test_trials):
+        print('---- (Eval) Episode {} ----'.format(i))
+        episode_seed = rng.randint(0, pow(2, 32) - 1)
+        print('Session Seed: ', args.seed, 'Episode seed:', episode_seed)
+        episode_data, _, _ = run_episode(env, agent, mdp, args.episode_max_steps, mode='eval', seed=episode_seed)
+        eval_data.append(episode_data)
+        print('--------------------')
+
+        logger.update()
+        logger.log_data(eval_data, 'eval_data')
+
+    successes, actions = 0, 0
+    for episode in eval_data:
+        if episode[-1]['terminal_class'] == 2:
+            successes += 1
+            actions += len(episode)
+
+    if successes > 0:
+        print('Success: ', "{:.2f}".format(100 * successes / len(eval_data)), 'Mean actions: ',
+              "{:.2f}".format(actions / successes))
+        return successes / len(eval_data), actions / successes
+    else:
+        print('Success: ', "{:.2f}".format(0), 'Mean actions: NaN')
+        return 0, 0
 
 
 def parse_args():
