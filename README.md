@@ -5,19 +5,13 @@ This repository is an implementation of the paper 'Robust object grasping in clu
 </p>
 
 ## Installation
-Create a virtual environment and install the requirements.
 ```shell
+git clone git@github.com:mkiatos/dqn-singulation.git
+cd dqn-singulation
+
 virtualenv ./venv --python=python3
 source ./venv/bin/activate
 pip install -r requirements.txt
-```
-
-Download and install the core for table top manipulation tasks:
-```shell
-git clone https://github.com/robot-clutter/clt_core.git
-cd clt_core
-pip install -e .
-cd ..
 ```
 
 Install PytTorch 1.9.0
@@ -25,8 +19,26 @@ Install PytTorch 1.9.0
 pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/cu111/torch_stable.html
 ```
 
-## Quick Demo
+Download and install the core code used for tabletop manipulation tasks:
+```shell
+git clone https://github.com/robot-clutter/clt_core.git
+cd clt_core
+pip install -e .
+cd ..
+```
 
+## Quick Demo
+This demo runs our pre-trained model with a UR5 robot arm in simulation. The objective is to singulate the target object (red one) from its surrounding clutter.
+### Instructions 
+Download our pretrained models:
+```commandline
+
+```
+
+Then, run the follow command:
+```commandline
+python run.py --is_testing --checkpoint '../logs/' --test_trials 100 --episode_max_steps 10 --seed 10
+```
 
 ## Training
 To train the dqn agent from scratch in simulation run the following command:
