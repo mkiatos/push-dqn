@@ -378,16 +378,17 @@ class DiscreteMDP(MDP):
 
         return push.p1.copy(), push.p2.copy()
 
-
-    def init_state_is_valid(self, obs):
+    def init_state_is_valid(self, obs, pxl_eps=100):
         rgb, depth, seg = obs['rgb'], obs['depth'], obs['seg']
         target = next(x for x in obs['full_state']['objects'] if x.name == 'target')
 
         mask = np.zeros((rgb.shape[0], rgb.shape[1]), dtype=np.uint8)
         mask[seg == target.body_id] = 255
         mask = Feature(mask).crop(CROP_TABLE, CROP_TABLE).array()
+        target_visible_pxls = len(np.argwhere(mask == 255))
 
-        if (mask == 0).all() or target.pos[2] < 0:
+        # ToDo: Fix target occlusion
+        if target_visible_pxls < pxl_eps or target.pos[2] < 0:
             return False
 
         return True
