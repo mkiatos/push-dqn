@@ -12,6 +12,8 @@ from env import BulletEnv
 from clt_core.util.memory import Transition
 from clt_core.util.info import Logger
 
+from analyze import analyze_train_results
+
 
 def run_episode(env, agent, mdp, max_steps, mode='train', seed=0):
     """
@@ -206,3 +208,5 @@ if __name__ == '__main__':
         eval(args)
     else:
         train(args)
+
+    # analyze_train_results(dir='logs/train_dqn')
