@@ -92,6 +92,8 @@ class BulletEnv(Env):
         p.addUserDebugLine(pos, pos + scale * quat.rotation_matrix()[:, 1], [0, 1, 0])
         p.addUserDebugLine(pos, pos + scale * quat.rotation_matrix()[:, 2], [0, 0, 1])
 
+        self.target_mask = []
+
     def add_single_box(self, single_obj):
         if single_obj.name == 'target':
             color = [1, 0, 0, 1]
@@ -181,7 +183,7 @@ class BulletEnv(Env):
 
             max_size = np.sqrt(objs[i].size[0] ** 2 + objs[i].size[1] ** 2)
             erode_size = int(np.round(get_pxl_distance(meters=max_size)))
-            seg = self.get_obs()['seg']
+            seg = super(BulletEnv, self).get_obs()['seg']
             seg = clt.cv_tools.Feature(seg).crop(crop_size, crop_size).array()
             free = np.zeros(seg.shape, dtype=np.uint8)
             free[seg == 1] = 1
@@ -207,6 +209,11 @@ class BulletEnv(Env):
             body_id = self.add_single_box(objs[i])
             self.objects.append(clt.core.Object(name=objs[i].name, pos=objs[i].pos, quat=objs[i].quat,
                                                 size=objs[i].size, body_id=body_id))
+
+            if i == 0:
+                self.target_mask = super(BulletEnv, self).get_obs()['seg']
+                # plt.imshow(seg)
+                # plt.show()
 
     def reset(self):
         self.collision = False
@@ -274,4 +281,9 @@ class BulletEnv(Env):
                                                      quat=clt.ori.Quaternion(x=quat[0], y=quat[1], z=quat[2],
                                                                              w=quat[3]),
                                                      inv=True)
+
+    def get_obs(self):
+        obs = super(BulletEnv, self).get_obs()
+        obs['target_mask'] = self.target_mask
+        return obs
 
