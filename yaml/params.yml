@@ -28,7 +28,7 @@ env:
       enforce_convex_hull: 15
       randomize_pos: False
     obstacle:
-      min_bounding_box: [ .03, .03, .02 ]
+      min_bounding_box: [ .03, .03, .016 ]
       max_bounding_box: [ .04, .04, .025 ]
     nr_of_obstacles:
       - 5
