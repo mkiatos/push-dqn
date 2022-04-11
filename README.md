@@ -29,15 +29,8 @@ cd ..
 
 ## Quick Demo
 This demo runs our pre-trained model with a UR5 robot arm in simulation. The objective is to singulate the target object (red one) from its surrounding clutter.
-### Instructions 
-Download our pretrained models:
 ```commandline
-
-```
-
-Then, run the follow command:
-```commandline
-python run.py --is_testing --checkpoint '../logs/' --test_trials 100 --episode_max_steps 10 --seed 10
+python run.py --is_testing --test_trials 10 --episode_max_steps 10 --seed 10
 ```
 
 ## Training
