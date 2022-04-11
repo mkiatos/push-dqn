@@ -51,8 +51,6 @@ __pycache__
 /logs
 /models
 
-*.urdf
-
 *.obj
 
 /venv
