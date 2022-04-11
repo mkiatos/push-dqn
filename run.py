@@ -124,7 +124,6 @@ def train(args):
     for i in range(args.n_episodes):
         print('--- (Train) Episode {} ---'.format(i))
         episode_seed = rng.randint(0, pow(2, 32) - 1)
-        episode_seed = 1569793795
         print('Session Seed: ', args.seed, 'Episode seed:', episode_seed)
         episode_data, obs, actions = run_episode(env, agent, mdp, args.episode_max_steps, seed=episode_seed)
         train_data.append(episode_data)
@@ -193,10 +192,11 @@ def parse_args():
 
     # -------------- Testing options --------------
     parser.add_argument('--is_testing', dest='is_testing', action='store_true', default=False)
-    parser.add_argument('--snapshot_file', default='', type=str, help='The path to the model to be evaluated')
+    parser.add_argument('--checkpoint', default='pretrained_model', type=str,
+                        help='The path to the model to load for evaluation')
     parser.add_argument('--test_trials', default=1000, type=int, help='Number of episodes to evaluate for')
 
-    parser.add_argument('--eval_all', default=False, type=bool, help='Evaluate all models')
+    # parser.add_argument('--eval_all', default=False, type=bool, help='Evaluate all models')
 
     args = parser.parse_args()
     return args
