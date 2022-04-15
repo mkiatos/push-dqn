@@ -57,5 +57,3 @@ If you find this code useful in your work, please consider citing:
   organization={IEEE}
 }
 ```
-
-Note that this is a work in progress.
